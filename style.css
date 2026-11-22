@@ -1,0 +1,357 @@
+/* ===== Paire en Chaîne ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', 'Trebuchet MS', Tahoma, sans-serif;
+  background: radial-gradient(ellipse at center, #1e5c3a 0%, #0d3320 70%, #082416 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 20px 14px 40px;
+  color: #fff;
+}
+
+#jeu {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---------- En-tête ---------- */
+#entete {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#entete h1 {
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+#stats { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.stat {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#statScore span {
+  font-weight: bold;
+  color: #ffd75e;
+  font-size: 1.15rem;
+}
+
+.stat.boost { animation: boostScore 0.6s ease; }
+@keyframes boostScore {
+  50% { transform: scale(1.12); background: rgba(255, 215, 94, 0.28); }
+}
+
+button {
+  background: linear-gradient(180deg, #ffe08a, #f5c542);
+  color: #2a2005;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+button:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4); }
+button:active { transform: translateY(0); }
+
+/* ---------- Points flottants ---------- */
+#zoneScore { position: relative; width: 100%; height: 4px; }
+
+.points-flottantes {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #ffd75e;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+  animation: flotter 1s ease-out forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes flotter {
+  0%   { opacity: 0; transform: translate(-50%, 10px) scale(0.6); }
+  25%  { opacity: 1; transform: translate(-50%, -6px) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -55px) scale(1); }
+}
+
+/* ---------- Grille ---------- */
+#grille {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 610px; /* 5 × 114 px : échelle exacte ×2 des cartes pixel art 57×79 */
+}
+
+.case {
+  aspect-ratio: 57 / 79;
+  position: relative;
+}
+
+/* ---------- Cartes ---------- */
+.carte {
+  width: 100%;
+  height: 100%;
+  perspective: 900px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.carte-interieur {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.carte.retournee .carte-interieur { transform: rotateY(180deg); }
+
+.face {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.face.avant {
+  background: #fff;
+  border: 2px solid #b5b2a6;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.face.avant img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.face.dos {
+  transform: rotateY(180deg);
+  background: #22386e;
+  border: 2px solid #16264d;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.face.dos::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('Pixel Playing Cards - Asset Pack/blue_backing.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+
+/* Liseré doré pour les jokers */
+.carte.joker .face.avant { border-color: #c9a227; }
+
+/* Sélection */
+.carte.selectionnee { transform: translateY(-8px); z-index: 3; }
+.carte.selectionnee .face.avant {
+  border-color: #ffd75e;
+  box-shadow: 0 0 0 3px #ffd75e, 0 8px 18px rgba(0, 0, 0, 0.5);
+}
+
+/* Ligne/colonne complétée (pulse) */
+.carte.completee .face { animation: pulse 0.55s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 94, 0.9); }
+  50% { box-shadow: 0 0 0 9px rgba(255, 215, 94, 0); }
+}
+
+/* Paire invalide (secousse) */
+.carte.secouee { animation: secousse 0.4s ease; }
+@keyframes secousse {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(7px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+/* Suppression vers la défausse */
+.carte.supprimee {
+  animation: suppression 0.45s ease forwards;
+  pointer-events: none;
+  z-index: 4;
+}
+@keyframes suppression {
+  to { transform: scale(0.3) translateY(45px); opacity: 0; }
+}
+
+/* Apparition (distribution / remplissage) */
+.carte.apparu { animation: apparition 0.4s ease backwards; }
+@keyframes apparition {
+  from { transform: translateY(-18px) scale(0.8); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ---------- Piles ---------- */
+#piles { display: flex; gap: 48px; }
+
+.pile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.zone-pile {
+  width: 72px;
+  height: 100px;
+  position: relative;
+}
+
+.zone-pile .carte { cursor: default; }
+.zone-pile .face { border-radius: 6px; }
+
+.carte-mini {
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  background: #22386e;
+  border: 2px solid #16264d;
+  position: relative;
+  overflow: hidden;
+}
+.carte-mini::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('Pixel Playing Cards - Asset Pack/blue_backing.png') center / 100% 100% no-repeat;
+  image-rendering: pixelated;
+}
+.carte-mini.vide {
+  background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+}
+.carte-mini.vide::before { content: none; }
+
+.compteur {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  padding: 2px 12px;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.nom-pile { font-size: 0.85rem; opacity: 0.85; }
+
+/* ---------- Aide ---------- */
+#aide {
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  line-height: 1.5;
+}
+#aide b { color: #ffd75e; }
+
+/* ---------- Écran de fin ---------- */
+#overlayFin {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+#overlayFin.cache { display: none; }
+
+.boite-fin {
+  background: #14432c;
+  border: 2px solid #ffd75e;
+  border-radius: 16px;
+  padding: 38px 56px;
+  text-align: center;
+  animation: apparition 0.4s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+.boite-fin h2 { margin-bottom: 10px; }
+.boite-fin p { margin-bottom: 12px; }
+.score-final {
+  font-size: 1.4rem;
+  color: #ffd75e;
+  font-weight: bold;
+}
+.boite-fin button { margin-top: 8px; }
+
+/* ---------- Meilleurs scores ---------- */
+#classement {
+  margin: 16px 0 4px;
+  text-align: left;
+}
+#classement h3 {
+  text-align: center;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  color: #ffd75e;
+}
+#classementListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#classementListe li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.92rem;
+}
+#classementListe li.rang-nouveau {
+  border-color: #ffd75e;
+  background: rgba(255, 215, 94, 0.16);
+}
+#classementListe .medaille {
+  width: 28px;
+  text-align: center;
+  font-weight: bold;
+}
+#classementListe .rang-score {
+  font-weight: bold;
+  color: #ffd75e;
+  min-width: 42px;
+}
+#classementListe .rang-date {
+  margin-left: auto;
+  opacity: 0.75;
+  font-size: 0.82rem;
+}
+#classementListe li.vide {
+  justify-content: center;
+  background: none;
+  border: none;
+  opacity: 0.7;
+}

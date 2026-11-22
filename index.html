@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paire en Chaîne</title>
+  <meta name="description" content="Jeu solo de paires en grille 5×3 : retournez les paires, complétez lignes et colonnes.">
+  <meta name="theme-color" content="#0d3320">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Paire en Chaîne">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="jeu">
+    <header id="entete">
+      <h1>🃏 Paire en Chaîne</h1>
+      <div id="stats">
+        <div class="stat" id="statScore">Score : <span id="score">0</span></div>
+        <div class="stat">Tirage : <span id="nbTirage">39</span></div>
+        <div class="stat">Défausse : <span id="nbDefausse">0</span></div>
+        <div class="stat">Record : <span id="record">0</span></div>
+      </div>
+      <button id="btnNouvelle">Nouvelle partie</button>
+    </header>
+
+    <div id="zoneScore"></div>
+
+    <div id="grille"></div>
+
+    <div id="piles">
+      <div class="pile">
+        <div class="zone-pile" id="zoneTirage"></div>
+        <span class="compteur" id="compteurTirage">39</span>
+        <span class="nom-pile">Pile de tirage</span>
+      </div>
+      <div class="pile">
+        <div class="zone-pile" id="zoneDefausse"></div>
+        <span class="compteur" id="compteurDefausse">0</span>
+        <span class="nom-pile">Défausse</span>
+      </div>
+    </div>
+
+    <p id="aide">Cliquez sur deux cartes non retournées de même valeur pour les retourner.<br>
+      Ligne complétée (5) : <b>+3</b> · Colonne complétée (3) : <b>+1</b> · Un joker fait paire avec n'importe quelle carte.</p>
+
+    <div id="overlayFin" class="cache">
+      <div class="boite-fin">
+        <h2>Fin de partie !</h2>
+        <p>Plus aucune paire possible.</p>
+        <p class="score-final">Score final : <span id="scoreFinal">0</span></p>
+        <div id="classement">
+          <h3>🏆 Meilleurs scores</h3>
+          <ol id="classementListe"></ol>
+        </div>
+        <button id="btnRejouer">Rejouer</button>
+      </div>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
