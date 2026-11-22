@@ -270,6 +270,8 @@ button:active { transform: translateY(0); }
   line-height: 1.5;
 }
 #aide b { color: #ffd75e; }
+#aide a { color: #8fd4ae; text-decoration: none; }
+#aide a:hover { text-decoration: underline; }
 
 /* ---------- Écran de fin ---------- */
 #overlayFin {
