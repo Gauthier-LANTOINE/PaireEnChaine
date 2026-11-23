@@ -27,6 +27,7 @@ let enCours = false;
 let finPartie = false;
 let cellules = [];
 let idCarte = 0;
+let numeroPartie = 0;
 
 /* ---------- Utilitaires ---------- */
 
@@ -89,9 +90,17 @@ function elementCarte(l, c) {
   return cellules[l][c].querySelector('.carte');
 }
 
+function apresDelai(gen, delai, fn) {
+  // Exécute fn après `delai` ms, sauf si une nouvelle partie a démarré entre-temps.
+  setTimeout(() => {
+    if (gen === numeroPartie) fn();
+  }, delai);
+}
+
 /* ---------- Démarrage ---------- */
 
 function nouvellePartie() {
+  numeroPartie++; // invalide les callbacks en attente de la partie précédente
   const paquet = melanger(creerPaquet());
   grille = [];
   let idx = 0;
@@ -247,13 +256,14 @@ function estPaire(a, b) {
 /* ---------- Déroulement d'un tour ---------- */
 
 function formerPaire(s1, s2) {
+  const gen = numeroPartie;
   enCours = true;
   selection = null;
   grille[s1.l][s1.c].retournee = true;
   grille[s2.l][s2.c].retournee = true;
   afficher();
 
-  setTimeout(() => {
+  apresDelai(gen, 560, () => {
     const completions = verifierCompletions();
     const points = completions.lignes.length * 3 + completions.colonnes.length * 1;
     if (points > 0) {
@@ -261,19 +271,19 @@ function formerPaire(s1, s2) {
       afficherPoints(points);
       const stat = document.getElementById('statScore');
       stat.classList.add('boost');
-      setTimeout(() => stat.classList.remove('boost'), 650);
+      apresDelai(gen, 650, () => stat.classList.remove('boost'));
       marquerCompletions(completions);
-      setTimeout(() => {
+      apresDelai(gen, 650, () => {
         enleverCompletions(completions);
-        setTimeout(() => {
+        apresDelai(gen, 500, () => {
           rejouer();
-          setTimeout(apresTour, 450);
-        }, 500);
-      }, 650);
+          apresDelai(gen, 450, apresTour);
+        });
+      });
     } else {
       apresTour();
     }
-  }, 560);
+  });
 }
 
 function verifierCompletions() {

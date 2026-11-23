@@ -60,8 +60,10 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(requete)
         .then((reponse) => {
-          const copie = reponse.clone();
-          caches.open(CACHE_APP).then((cache) => cache.put('./index.html', copie));
+          if (reponse.ok) {
+            const copie = reponse.clone();
+            caches.open(CACHE_APP).then((cache) => cache.put('./index.html', copie));
+          }
           return reponse;
         })
         .catch(() =>
