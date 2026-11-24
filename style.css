@@ -293,12 +293,13 @@ button:active { transform: translateY(0); }
 }
 .bouton-coup:disabled:hover { transform: none; }
 
-/* Écrans étroits : stats et boutons sur une seule ligne */
+/* Écrans étroits : stats sur une ligne ; boutons de coups agrandis
+   (police 0.8rem, plus hauts) mais toujours sur une seule ligne */
 @media (max-width: 520px) {
   #stats { gap: 6px; }
   .stat { padding: 4px 6px; font-size: 0.7rem; }
-  #coupsSpeciaux { gap: 6px; }
-  .bouton-coup { padding: 6px 8px; font-size: 0.7rem; }
+  #coupsSpeciaux { gap: 4px; }
+  .bouton-coup { padding: 10px 6px; font-size: 0.8rem; }
 }
 
 /* Surbrillance de la grille pendant un mode de sélection */
