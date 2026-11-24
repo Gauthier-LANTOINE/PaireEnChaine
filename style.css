@@ -262,6 +262,99 @@ button:active { transform: translateY(0); }
 
 .nom-pile { font-size: 0.85rem; opacity: 0.85; }
 
+/* ---------- Coups spéciaux ---------- */
+#coupsSpeciaux {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bouton-coup {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+
+.bouton-coup:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+.bouton-coup:disabled:hover { transform: none; }
+
+/* Surbrillance de la grille pendant un mode de sélection */
+#grille.mode-coup {
+  outline: 3px dashed #ffd75e;
+  outline-offset: 6px;
+}
+
+/* Bandeau de mode en cours */
+#hintCoup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 610px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid #ffd75e;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+}
+#hintCoup.cache { display: none; }
+#hintCoup button {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  margin-left: auto;
+}
+
+/* ---------- Aperçu du coup (overlay) ---------- */
+#overlayCoup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+#overlayCoup.cache { display: none; }
+
+.boite-coup {
+  background: #14432c;
+  border: 2px solid #ffd75e;
+  border-radius: 16px;
+  padding: 28px 40px;
+  text-align: center;
+  animation: apparition 0.4s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+.boite-coup h2 { margin-bottom: 10px; }
+.boite-coup p { margin-bottom: 4px; font-size: 0.92rem; }
+
+#apercuCoup {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0;
+}
+#apercuCoup .carte {
+  width: 114px;
+  height: 158px;
+  cursor: default;
+}
+
+.boutons-coup {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.bouton-secondaire {
+  background: linear-gradient(180deg, #d8d8d8, #a8a8a8);
+  color: #222;
+}
+
 /* ---------- Aide ---------- */
 #aide {
   text-align: center;

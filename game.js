@@ -25,6 +25,8 @@ let score = 0;
 let selection = null;
 let enCours = false;
 let finPartie = false;
+let coupsSpeciaux = { resonance: 1, echange: 1, famille: 1 };
+let modeCoupSpecial = null; // null | { type: 'echange' | 'famille' | 'resonanceJoker', premiere }
 let cellules = [];
 let idCarte = 0;
 let numeroPartie = 0;
@@ -116,7 +118,11 @@ function nouvellePartie() {
   selection = null;
   enCours = false;
   finPartie = false;
+  coupsSpeciaux = { resonance: 1, echange: 1, famille: 1 };
+  modeCoupSpecial = null;
   document.getElementById('overlayFin').classList.add('cache');
+  document.getElementById('overlayCoup').classList.add('cache');
+  majHintCoup(null);
   construireGrilleDOM();
   majRecord();
   afficher(true);
@@ -164,13 +170,17 @@ function afficher(initial = false) {
       }
       if (elExistant && elExistant.dataset.id === String(carte.id)) {
         elExistant.classList.toggle('retournee', carte.retournee);
+        const selectionMode = modeCoupSpecial !== null && modeCoupSpecial.premiere !== null
+          ? modeCoupSpecial.premiere
+          : selection;
         elExistant.classList.toggle(
           'selectionnee',
-          selection !== null && selection.l === l && selection.c === c
+          selectionMode !== null && selectionMode.l === l && selectionMode.c === c
         );
       } else {
         caseEl.innerHTML = '';
         const el = creerElementCarte(carte);
+        el.classList.toggle('retournee', carte.retournee);
         el.classList.add('apparu');
         if (initial) {
           el.style.animationDelay = ((l * NB_COLONNES + c) * 40) + 'ms';
@@ -183,6 +193,7 @@ function afficher(initial = false) {
   document.getElementById('nbTirage').textContent = pileTirage.length;
   document.getElementById('nbDefausse').textContent = defausse.length;
   afficherPiles();
+  majBoutonsCoups();
 }
 
 function afficherPiles() {
@@ -218,7 +229,16 @@ function afficherPoints(points) {
 function clicCarte(l, c) {
   if (enCours || finPartie) return;
   const carte = grille[l][c];
-  if (!carte || carte.retournee) return;
+  if (!carte) return;
+
+  if (modeCoupSpecial !== null) {
+    if (modeCoupSpecial.type === 'echange') clicEchange(l, c);
+    else if (modeCoupSpecial.type === 'famille') clicFamille(l, c);
+    else clicResonanceJoker(l, c);
+    return;
+  }
+
+  if (carte.retournee) return;
 
   if (selection === null) {
     selection = { l, c };
@@ -262,7 +282,13 @@ function formerPaire(s1, s2) {
   grille[s1.l][s1.c].retournee = true;
   grille[s2.l][s2.c].retournee = true;
   afficher();
+  resoudreTour(gen);
+}
 
+/* Pipeline de résolution commun à la paire normale et aux coups spéciaux :
+   vérifie les lignes/colonnes complétées, marque les points, enlève les
+   cartes complétées, remplit les cases vides puis clôt le tour. */
+function resoudreTour(gen) {
   apresDelai(gen, 560, () => {
     const completions = verifierCompletions();
     const points = completions.lignes.length * 3 + completions.colonnes.length * 1;
@@ -356,6 +382,220 @@ function rejouer() {
   if (piochee) afficher();
 }
 
+/* ---------- Coups spéciaux ---------- */
+
+function majBoutonsCoups() {
+  majBoutonCoup('btnResonance', '⚡ Resonance', coupsSpeciaux.resonance, 'resonance');
+  majBoutonCoup('btnEchange', '🔄 Echange', coupsSpeciaux.echange, 'echange');
+  majBoutonCoup('btnFamille', '👪 Famille', coupsSpeciaux.famille, 'famille');
+}
+
+function majBoutonCoup(id, libelle, compteur, type) {
+  const btn = document.getElementById(id);
+  btn.textContent = libelle + ' (' + compteur + ')';
+  // Le bouton du coup en cours reste actif : un re-clic annule le mode.
+  // Pas de grisage pendant la résolution (enCours) : les guards des
+  // fonctions lancer* bloquent déjà tout lancement en cours de tour.
+  const autreMode = modeCoupSpecial !== null && modeCoupSpecial.type !== type;
+  btn.disabled = compteur === 0 || finPartie || autreMode;
+}
+
+function majHintCoup(texte) {
+  const hint = document.getElementById('hintCoup');
+  if (texte === null) {
+    hint.classList.add('cache');
+    document.getElementById('grille').classList.remove('mode-coup');
+  } else {
+    document.getElementById('texteHintCoup').textContent = texte;
+    hint.classList.remove('cache');
+    document.getElementById('grille').classList.add('mode-coup');
+  }
+  majBoutonsCoups();
+}
+
+function annulerModeCoup() {
+  modeCoupSpecial = null;
+  selection = null;
+  majHintCoup(null);
+  afficher();
+}
+
+function secouerCartes(paires) {
+  paires.forEach(([l, c]) => {
+    const el = elementCarte(l, c);
+    if (el) el.classList.add('secouee');
+  });
+  setTimeout(() => {
+    paires.forEach(([l, c]) => {
+      const el = elementCarte(l, c);
+      if (el) el.classList.remove('secouee');
+    });
+  }, 420);
+}
+
+function coupsSpeciauxRestants() {
+  return coupsSpeciaux.resonance + coupsSpeciaux.echange + coupsSpeciaux.famille;
+}
+
+/* ----- ⚡ Resonance : pioche la carte du dessus, la défausse, retourne toutes
+   les cartes de la grille de la même valeur (joker = choix du joueur). ----- */
+
+function lancerResonance() {
+  if (enCours || finPartie || coupsSpeciaux.resonance === 0 || modeCoupSpecial !== null) return;
+  if (pileTirage.length === 0) {
+    if (defausse.length === 0) return;
+    pileTirage = melanger(defausse);
+    defausse = [];
+  }
+  const apercu = pileTirage[pileTirage.length - 1];
+  const zone = document.getElementById('apercuCoup');
+  zone.innerHTML = '';
+  zone.appendChild(creerElementCarte(apercu));
+  document.getElementById('overlayCoup').classList.remove('cache');
+}
+
+function annulerResonance() {
+  document.getElementById('overlayCoup').classList.add('cache');
+  afficher();
+}
+
+function confirmerResonance() {
+  const gen = numeroPartie;
+  enCours = true;
+  coupsSpeciaux.resonance--;
+  const carte = pileTirage.pop();
+  defausse.push(carte);
+  document.getElementById('overlayCoup').classList.add('cache');
+  selection = null;
+  if (carte.joker) {
+    modeCoupSpecial = { type: 'resonanceJoker', premiere: null };
+    enCours = false; // le joueur doit pouvoir choisir une carte sur la grille
+    majHintCoup('Joker ! Choisis une carte sur la grille : toutes les cartes de la même valeur seront retournées.');
+    afficher();
+  } else {
+    retournerValeur(carte.valeur);
+    afficher();
+    resoudreTour(gen);
+  }
+}
+
+function clicResonanceJoker(l, c) {
+  const carte = grille[l][c];
+  const gen = numeroPartie;
+  enCours = true;
+  modeCoupSpecial = null;
+  majHintCoup(null);
+  retournerValeur(carte.valeur);
+  afficher();
+  resoudreTour(gen);
+}
+
+function retournerValeur(valeur) {
+  for (let l = 0; l < NB_LIGNES; l++) {
+    for (let c = 0; c < NB_COLONNES; c++) {
+      const carte = grille[l][c];
+      if (carte && !carte.retournee && carte.valeur === valeur) {
+        carte.retournee = true;
+      }
+    }
+  }
+}
+
+/* ----- 🔄 Echange : échange 2 cartes de la grille (retournées ou non). ----- */
+
+function lancerEchange() {
+  if (enCours || finPartie) return;
+  if (modeCoupSpecial !== null) {
+    if (modeCoupSpecial.type === 'echange') annulerModeCoup(); // re-clic = annuler le mode
+    return;
+  }
+  if (coupsSpeciaux.echange === 0) return;
+  selection = null;
+  modeCoupSpecial = { type: 'echange', premiere: null };
+  majHintCoup('Choisis la 1re carte à échanger (retournée ou non).');
+  afficher();
+}
+
+function clicEchange(l, c) {
+  if (modeCoupSpecial.premiere === null) {
+    modeCoupSpecial.premiere = { l, c };
+    majHintCoup('Choisis la 2e carte à échanger.');
+    afficher();
+    return;
+  }
+  const p = modeCoupSpecial.premiere;
+  if (p.l === l && p.c === c) {
+    modeCoupSpecial.premiere = null;
+    majHintCoup('Choisis la 1re carte à échanger (retournée ou non).');
+    afficher();
+    return;
+  }
+  const gen = numeroPartie;
+  enCours = true;
+  coupsSpeciaux.echange--;
+  const tmp = grille[p.l][p.c];
+  grille[p.l][p.c] = grille[l][c];
+  grille[l][c] = tmp;
+  selection = null;
+  modeCoupSpecial = null;
+  majHintCoup(null);
+  afficher();
+  resoudreTour(gen);
+}
+
+/* ----- 👪 Famille : retourne 2 cartes non retournées de la même famille
+   (le joker compte pour toutes les familles). ----- */
+
+function lancerFamille() {
+  if (enCours || finPartie) return;
+  if (modeCoupSpecial !== null) {
+    if (modeCoupSpecial.type === 'famille') annulerModeCoup(); // re-clic = annuler le mode
+    return;
+  }
+  if (coupsSpeciaux.famille === 0) return;
+  selection = null;
+  modeCoupSpecial = { type: 'famille', premiere: null };
+  majHintCoup('Choisis 2 cartes non retournées de la même famille (♠ ♥ ♦ ♣).');
+  afficher();
+}
+
+function clicFamille(l, c) {
+  const carte = grille[l][c];
+  if (carte.retournee) {
+    secouerCartes([[l, c]]);
+    return;
+  }
+  if (modeCoupSpecial.premiere === null) {
+    modeCoupSpecial.premiere = { l, c };
+    majHintCoup('Choisis la 2e carte de la même famille.');
+    afficher();
+    return;
+  }
+  const p = modeCoupSpecial.premiere;
+  if (p.l === l && p.c === c) {
+    modeCoupSpecial.premiere = null;
+    majHintCoup('Choisis 2 cartes non retournées de la même famille (♠ ♥ ♦ ♣).');
+    afficher();
+    return;
+  }
+  const autre = grille[p.l][p.c];
+  const valide = autre.nomFamille === carte.nomFamille || autre.joker || carte.joker;
+  if (!valide) {
+    secouerCartes([[p.l, p.c], [l, c]]);
+    return; // la 1re carte reste sélectionnée
+  }
+  const gen = numeroPartie;
+  enCours = true;
+  coupsSpeciaux.famille--;
+  grille[p.l][p.c].retournee = true;
+  grille[l][c].retournee = true;
+  selection = null;
+  modeCoupSpecial = null;
+  majHintCoup(null);
+  afficher();
+  resoudreTour(gen);
+}
+
 /* ---------- Fin de partie ---------- */
 
 function pairesPossibles() {
@@ -380,15 +620,16 @@ function pairesPossibles() {
 }
 
 function apresTour() {
-  afficher();
   enCours = false;
-  if (!pairesPossibles()) {
+  afficher();
+  if (!pairesPossibles() && coupsSpeciauxRestants() === 0) {
     finPartie = true;
     const rang = enregistrerScore(score);
     document.getElementById('scoreFinal').textContent = score;
     afficherClassement(rang);
     majRecord();
     document.getElementById('overlayFin').classList.remove('cache');
+    majBoutonsCoups(); // boutons grisés sous l'overlay de fin
   }
 }
 
@@ -455,6 +696,12 @@ function majRecord() {
 
 document.getElementById('btnNouvelle').addEventListener('click', nouvellePartie);
 document.getElementById('btnRejouer').addEventListener('click', nouvellePartie);
+document.getElementById('btnResonance').addEventListener('click', lancerResonance);
+document.getElementById('btnEchange').addEventListener('click', lancerEchange);
+document.getElementById('btnFamille').addEventListener('click', lancerFamille);
+document.getElementById('btnAnnulerMode').addEventListener('click', annulerModeCoup);
+document.getElementById('btnConfirmerCoup').addEventListener('click', confirmerResonance);
+document.getElementById('btnAnnulerCoup').addEventListener('click', annulerResonance);
 nouvellePartie();
 
 /* ---------- PWA : inscription du service worker ---------- */

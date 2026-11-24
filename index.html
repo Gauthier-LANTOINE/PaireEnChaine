@@ -32,6 +32,17 @@
 
     <div id="grille"></div>
 
+    <div id="hintCoup" class="cache">
+      <span id="texteHintCoup"></span>
+      <button id="btnAnnulerMode">Annuler</button>
+    </div>
+
+    <div id="coupsSpeciaux">
+      <button id="btnResonance" class="bouton-coup">⚡ Resonance (1)</button>
+      <button id="btnEchange" class="bouton-coup">🔄 Echange (1)</button>
+      <button id="btnFamille" class="bouton-coup">👪 Famille (1)</button>
+    </div>
+
     <div id="piles">
       <div class="pile">
         <div class="zone-pile" id="zoneTirage"></div>
@@ -47,12 +58,26 @@
 
     <p id="aide">Cliquez sur deux cartes non retournées de même valeur pour les retourner.<br>
       Ligne complétée (5) : <b>+3</b> · Colonne complétée (3) : <b>+1</b> · Un joker fait paire avec n'importe quelle carte.<br>
+      3 coups spéciaux, chacun une seule fois : <b>⚡ Resonance</b> retourne toutes les cartes de la valeur de la carte piochée ·
+      <b>🔄 Echange</b> échange 2 cartes de la grille · <b>👪 Famille</b> retourne 2 cartes non retournées de la même famille.<br>
       <span class="credit">Cartes : <i>Pixel Playing Cards</i> (CC BY 4.0) par <a href="https://grijzelucht.itch.io/pixel-playing-cards" target="_blank" rel="noopener">dallas</a></span></p>
+
+    <div id="overlayCoup" class="cache">
+      <div class="boite-coup">
+        <h2>⚡ Resonance</h2>
+        <p>La carte suivante de la pioche part en défausse et toutes les cartes de la grille de la même valeur sont retournées. Un joker laisse le choix de la valeur.</p>
+        <div id="apercuCoup"></div>
+        <div class="boutons-coup">
+          <button id="btnConfirmerCoup">Confirmer</button>
+          <button id="btnAnnulerCoup" class="bouton-secondaire">Annuler</button>
+        </div>
+      </div>
+    </div>
 
     <div id="overlayFin" class="cache">
       <div class="boite-fin">
         <h2>Fin de partie !</h2>
-        <p>Plus aucune paire possible.</p>
+        <p>Plus aucune paire possible et plus aucun coup spécial restant.</p>
         <p class="score-final">Score final : <span id="scoreFinal">0</span></p>
         <div id="classement">
           <h3>🏆 Meilleurs scores</h3>
