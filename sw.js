@@ -1,7 +1,7 @@
 /* ===== Paire en Chaîne — service worker (mode hors-ligne) ===== */
 'use strict';
 
-const VERSION = 'paire-en-chaine-v1';
+const VERSION = 'paire-en-chaine-v2';
 const CACHE_APP = VERSION + '.app';         // app shell + paquet complet (préchargés)
 const CACHE_RUNTIME = VERSION + '.runtime'; // autres ressources (mise en cache à la volée)
 
@@ -78,7 +78,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Ressources statiques : cache d'abord, sinon réseau puis mise en cache
+  // Fichiers de l'application (JS/CSS/HTML) : réseau d'abord pour toujours
+  // servir la dernière version, repli sur le cache quand on est hors-ligne.
+  if (/\.(js|css|html|webmanifest)$/.test(url.pathname)) {
+    event.respondWith(
+      fetch(requete)
+        .then((reponse) => {
+          if (reponse.ok) {
+            const copie = reponse.clone();
+            caches.open(CACHE_APP).then((cache) => cache.put(requete, copie));
+          }
+          return reponse;
+        })
+        .catch(() =>
+          caches.match(requete).then((enCache) =>
+            enCache || new Response('Hors-ligne : ressource introuvable.', { status: 503 })
+          )
+        )
+    );
+    return;
+  }
+
+  // Images et autres ressources : cache d'abord, sinon réseau puis mise en cache
   event.respondWith(
     caches.match(requete).then((enCache) => {
       if (enCache) return enCache;

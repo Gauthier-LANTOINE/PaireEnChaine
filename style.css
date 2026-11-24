@@ -204,22 +204,33 @@ button:active { transform: translateY(0); }
   80% { transform: translateX(5px); }
 }
 
-/* Suppression vers la défausse */
-.carte.supprimee {
-  animation: suppression 0.45s ease forwards;
-  pointer-events: none;
-  z-index: 4;
-}
-@keyframes suppression {
-  to { transform: scale(0.3) translateY(45px); opacity: 0; }
-}
-
 /* Apparition (distribution / remplissage) */
 .carte.apparu { animation: apparition 0.4s ease backwards; }
 @keyframes apparition {
   from { transform: translateY(-18px) scale(0.8); opacity: 0; }
   to { transform: translateY(0) scale(1); opacity: 1; }
 }
+
+/* Surbrillance des paires (bouton 💡 Indice) : toutes les paires apparaissent en
+   même temps. Pas de grossissement : bordure colorée fixe et bien visible
+   (jokers en or) + lueur douce et lente autour, confortable pour les yeux. */
+.carte.surbrillee .face {
+  border-color: var(--couleur-paire);
+  animation: pulsePaire 3s ease-in-out infinite;
+}
+@keyframes pulsePaire {
+  0%, 100% { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45), 0 0 0 3px var(--couleur-paire), 0 0 6px 1px var(--halo-paire); }
+  50% { box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45), 0 0 0 3px var(--couleur-paire), 0 0 14px 3px var(--halo-paire); }
+}
+
+/* Bouton 💡 Indice : état désactivé pendant l'affichage (5 s) */
+#btnPaires:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+#btnPaires:disabled:hover { transform: none; }
 
 /* ---------- Piles ---------- */
 #piles { display: flex; gap: 48px; }

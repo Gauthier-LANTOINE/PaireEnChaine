@@ -14,6 +14,16 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Paire en Chaîne">
   <link rel="stylesheet" href="style.css">
+  <script>
+    /* Mise à jour automatique : quand un nouveau service worker prend le
+       contrôle (mise à jour du code), on recharge pour servir les fichiers
+       à jour au lieu de l'ancien cache. */
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', function (e) {
+        if (e.oldValue) window.location.reload();
+      });
+    }
+  </script>
 </head>
 <body>
   <div id="jeu">
@@ -27,6 +37,7 @@
       </div>
       <div id="boutonsEntete">
         <button id="btnNouvelle">Nouvelle partie</button>
+        <button id="btnPaires" title="Afficher un indice : les paires possibles sur la grille">💡 Indice</button>
         <button id="btnAide" title="Règles du jeu">❓</button>
       </div>
     </header>

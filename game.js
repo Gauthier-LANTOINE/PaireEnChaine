@@ -27,6 +27,7 @@ let enCours = false;
 let finPartie = false;
 let coupsSpeciaux = { resonance: 1, echange: 1, famille: 1 };
 let modeCoupSpecial = null; // null | { type: 'echange' | 'famille' | 'resonanceJoker', premiere }
+let surbrillancePaires = false; // le bouton 💡 Indice est en cours d'affichage
 let cellules = [];
 let idCarte = 0;
 let numeroPartie = 0;
@@ -120,6 +121,7 @@ function nouvellePartie() {
   finPartie = false;
   coupsSpeciaux = { resonance: 1, echange: 1, famille: 1 };
   modeCoupSpecial = null;
+  masquerPaires();
   document.getElementById('overlayFin').classList.add('cache');
   document.getElementById('overlayCoup').classList.add('cache');
   document.getElementById('overlayAide').classList.add('cache');
@@ -183,6 +185,10 @@ function afficher(initial = false) {
         const el = creerElementCarte(carte);
         el.classList.toggle('retournee', carte.retournee);
         el.classList.add('apparu');
+        // `apparu` doit disparaître à la fin de l'animation de distribution :
+        // laissée en place, elle relancerait l'animation d'apparition si une
+        // autre classe animée (ex. surbrillee) est retirée de la carte.
+        el.addEventListener('animationend', () => el.classList.remove('apparu'), { once: true });
         if (initial) {
           el.style.animationDelay = ((l * NB_COLONNES + c) * 40) + 'ms';
         }
@@ -229,6 +235,7 @@ function afficherPoints(points) {
 
 function clicCarte(l, c) {
   if (enCours || finPartie) return;
+  if (surbrillancePaires) masquerPaires(); // le coup qui va suivre rend l'indice périmé
   const carte = grille[l][c];
   if (!carte) return;
 
@@ -272,6 +279,99 @@ function clicCarte(l, c) {
 function estPaire(a, b) {
   if (a.joker || b.joker) return true; // joker = jolly : paire avec n'importe quelle carte
   return a.valeur === b.valeur;
+}
+
+/* ---------- Aide : surbrillance des paires (bouton 💡 Indice) ---------- */
+
+function calculerPaires() {
+  // Regroupe les cartes non retournées par valeur : chaque groupe de 2 cartes
+  // ou plus est surligné en entier avec une seule couleur (n'importe laquelle
+  // des cartes du groupe peut former la paire). Chaque joker forme une « paire »
+  // avec n'importe quelle carte, il est donc signalé seul, avec sa couleur.
+  const groupes = {};
+  const jokers = [];
+  for (let l = 0; l < NB_LIGNES; l++) {
+    for (let c = 0; c < NB_COLONNES; c++) {
+      const carte = grille[l][c];
+      if (!carte || carte.retournee) continue;
+      if (carte.joker) {
+        jokers.push({ l, c });
+      } else {
+        (groupes[carte.valeur] = groupes[carte.valeur] || []).push({ l, c });
+      }
+    }
+  }
+  const paires = [];
+  for (const valeur of Object.keys(groupes)) {
+    const cartes = groupes[valeur];
+    if (cartes.length >= 2) {
+      // Toute la famille visible (2, 3 ou 4 cartes) est surlignée d'une
+      // seule couleur : n'importe laquelle des cartes peut former la paire.
+      // (Un groupe de 1 carte ne forme aucune paire : pas de surlignage.)
+      paires.push(cartes);
+    }
+  }
+  return { paires, jokers };
+}
+
+function afficherPaires() {
+  if (enCours || finPartie || surbrillancePaires) return;
+  const { paires, jokers } = calculerPaires();
+  if (paires.length === 0 && jokers.length === 0) {
+    const gen = numeroPartie;
+    majHintCoup('Aucune paire possible sur la grille.');
+    apresDelai(gen, 2000, () => {
+      // Ne pas écraser le bandeau d'un mode de coup lancé entre-temps.
+      if (modeCoupSpecial === null) majHintCoup(null);
+    });
+    return;
+  }
+  surbrillancePaires = true;
+  document.getElementById('btnPaires').disabled = true;
+  const n = paires.length;
+  paires.forEach((paire, i) => {
+    const teinte = (i * 360 / n).toFixed(1);
+    // Luminosité/saturation proches de l'or du joker (#ffd75e ≈ hsl(45, 100%, 68 %))
+    // pour que toutes les bordures paraissent de la même épaisseur.
+    const couleur = 'hsl(' + teinte + ', 85%, 66%)';
+    // Syntaxe moderne (espaces) : seule celle-ci accepte l'alpha avec hsl().
+    const halo = 'hsl(' + teinte + ' 85% 66% / 0.6)';
+    paire.forEach((pos) => {
+      const el = elementCarte(pos.l, pos.c);
+      if (!el) return;
+      // Retire `apparu` : sinon l'enlèvement de `surbrillee` relancerait
+      // l'animation d'apparition de la carte.
+      el.classList.remove('apparu');
+      el.classList.add('surbrillee');
+      el.style.setProperty('--couleur-paire', couleur);
+      el.style.setProperty('--halo-paire', halo);
+    });
+  });
+  jokers.forEach((pos) => {
+    const el = elementCarte(pos.l, pos.c);
+    if (!el) return;
+    el.classList.remove('apparu');
+    el.classList.add('surbrillee');
+    el.style.setProperty('--couleur-paire', '#ffd75e'); // or = « paire avec n'importe quoi »
+    el.style.setProperty('--halo-paire', 'rgba(255, 215, 94, 0.6)');
+  });
+  // Effacement automatique après 5 s (invalidé si une nouvelle partie démarre).
+  apresDelai(numeroPartie, 5000, masquerPaires);
+}
+
+function masquerPaires() {
+  if (!surbrillancePaires) return;
+  surbrillancePaires = false;
+  for (let l = 0; l < NB_LIGNES; l++) {
+    for (let c = 0; c < NB_COLONNES; c++) {
+      const el = elementCarte(l, c);
+      if (!el) continue;
+      el.classList.remove('surbrillee');
+      el.style.removeProperty('--couleur-paire');
+      el.style.removeProperty('--halo-paire');
+    }
+  }
+  document.getElementById('btnPaires').disabled = false;
 }
 
 /* ---------- Déroulement d'un tour ---------- */
@@ -357,9 +457,9 @@ function enleverCompletions(completions) {
   cellulesACibles(completions).forEach(([l, c]) => {
     defausse.push(grille[l][c]);
     grille[l][c] = null;
-    const el = elementCarte(l, c);
-    if (el) el.classList.add('supprimee');
   });
+  // Les cartes restent affichées (et pulsent) un court instant avant de
+  // disparaître, pour adoucir la transition vers les nouvelles cartes.
   setTimeout(() => afficher(), 480);
 }
 
@@ -443,6 +543,7 @@ function coupsSpeciauxRestants() {
 
 function lancerResonance() {
   if (enCours || finPartie || coupsSpeciaux.resonance === 0 || modeCoupSpecial !== null) return;
+  if (surbrillancePaires) masquerPaires();
   if (pileTirage.length === 0) {
     if (defausse.length === 0) return;
     pileTirage = melanger(defausse);
@@ -511,6 +612,7 @@ function lancerEchange() {
     return;
   }
   if (coupsSpeciaux.echange === 0) return;
+  if (surbrillancePaires) masquerPaires();
   selection = null;
   modeCoupSpecial = { type: 'echange', premiere: null };
   majHintCoup('Choisis la 1re carte à échanger (retournée ou non).');
@@ -554,6 +656,7 @@ function lancerFamille() {
     return;
   }
   if (coupsSpeciaux.famille === 0) return;
+  if (surbrillancePaires) masquerPaires();
   selection = null;
   modeCoupSpecial = { type: 'famille', premiere: null };
   majHintCoup('Choisis 2 cartes non retournées de la même famille (♠ ♥ ♦ ♣).');
@@ -697,6 +800,7 @@ function majRecord() {
 
 document.getElementById('btnNouvelle').addEventListener('click', nouvellePartie);
 document.getElementById('btnRejouer').addEventListener('click', nouvellePartie);
+document.getElementById('btnPaires').addEventListener('click', afficherPaires);
 document.getElementById('btnResonance').addEventListener('click', lancerResonance);
 document.getElementById('btnEchange').addEventListener('click', lancerEchange);
 document.getElementById('btnFamille').addEventListener('click', lancerFamille);
@@ -712,6 +816,8 @@ nouvellePartie();
 
 if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // Le rechargement automatique en cas de mise à jour est assuré par un
+    // script inline dans index.html (toujours à jour, servi réseau d'abord).
     navigator.serviceWorker.register('sw.js').catch((erreur) => {
       // file:// ou http non sécurisé : l'inscription échoue, le jeu reste jouable.
       console.warn('Service worker non inscrit :', erreur);
