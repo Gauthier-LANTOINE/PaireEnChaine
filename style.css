@@ -36,6 +36,9 @@ body {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
+#boutonsEntete { display: flex; gap: 8px; }
+#btnAide { padding: 10px 14px; font-size: 1.05rem; line-height: 1; }
+
 /* align-items: stretch (défaut) → toutes les boîtes à la même hauteur */
 #stats { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
 
@@ -373,13 +376,40 @@ button:active { transform: translateY(0); }
 /* ---------- Aide ---------- */
 #aide {
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   opacity: 0.75;
   line-height: 1.5;
 }
 #aide b { color: #ffd75e; }
 #aide a { color: #8fd4ae; text-decoration: none; }
 #aide a:hover { text-decoration: underline; }
+
+/* ---------- Modale règles ---------- */
+#overlayAide {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+#overlayAide.cache { display: none; }
+
+.boite-aide {
+  background: #14432c;
+  border: 2px solid #ffd75e;
+  border-radius: 16px;
+  padding: 24px 28px;
+  text-align: center;
+  animation: apparition 0.4s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  width: min(92vw, 480px);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.boite-aide h2 { margin-bottom: 12px; }
+.boite-aide p { margin-bottom: 12px; font-size: 0.92rem; line-height: 1.5; }
 
 /* ---------- Écran de fin ---------- */
 #overlayFin {

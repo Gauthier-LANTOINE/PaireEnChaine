@@ -122,6 +122,7 @@ function nouvellePartie() {
   modeCoupSpecial = null;
   document.getElementById('overlayFin').classList.add('cache');
   document.getElementById('overlayCoup').classList.add('cache');
+  document.getElementById('overlayAide').classList.add('cache');
   majHintCoup(null);
   construireGrilleDOM();
   majRecord();
@@ -702,6 +703,8 @@ document.getElementById('btnFamille').addEventListener('click', lancerFamille);
 document.getElementById('btnAnnulerMode').addEventListener('click', annulerModeCoup);
 document.getElementById('btnConfirmerCoup').addEventListener('click', confirmerResonance);
 document.getElementById('btnAnnulerCoup').addEventListener('click', annulerResonance);
+document.getElementById('btnAide').addEventListener('click', () => document.getElementById('overlayAide').classList.remove('cache'));
+document.getElementById('btnFermerAide').addEventListener('click', () => document.getElementById('overlayAide').classList.add('cache'));
 nouvellePartie();
 
 /* ---------- PWA : inscription du service worker ---------- */
