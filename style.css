@@ -36,13 +36,20 @@ body {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
-#stats { display: flex; gap: 8px; flex-wrap: wrap; }
+/* align-items: stretch (défaut) → toutes les boîtes à la même hauteur */
+#stats { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
 
 .stat {
   background: rgba(0, 0, 0, 0.35);
   padding: 8px 14px;
   border-radius: 8px;
   font-size: 0.9rem;
+  /* Flex : centre le texte verticalement dans la boîte (les boîtes sont
+     toutes à la même hauteur grâce à align-items: stretch sur #stats).
+     gap : espace net entre le « : » et le chiffre. */
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -282,6 +289,14 @@ button:active { transform: translateY(0); }
   box-shadow: none;
 }
 .bouton-coup:disabled:hover { transform: none; }
+
+/* Écrans étroits : stats et boutons sur une seule ligne */
+@media (max-width: 520px) {
+  #stats { gap: 6px; }
+  .stat { padding: 4px 6px; font-size: 0.7rem; }
+  #coupsSpeciaux { gap: 6px; }
+  .bouton-coup { padding: 6px 8px; font-size: 0.7rem; }
+}
 
 /* Surbrillance de la grille pendant un mode de sélection */
 #grille.mode-coup {
