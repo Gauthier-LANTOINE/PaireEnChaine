@@ -31,14 +31,14 @@
       <h1>🃏 Paire en Chaîne</h1>
       <div id="stats">
         <div class="stat" id="statScore">Score : <span id="score">0</span></div>
-        <div class="stat">Tirage : <span id="nbTirage">39</span></div>
-        <div class="stat">Défausse : <span id="nbDefausse">0</span></div>
+        <div class="stat" id="statGraine">Seed : <span id="graineAffichee">—</span></div>
         <div class="stat">Record : <span id="record">0</span></div>
       </div>
       <div id="boutonsEntete">
         <button id="btnNouvelle">Nouvelle partie</button>
         <button id="btnPaires" title="Afficher un indice : les paires possibles sur la grille">💡 Indice</button>
         <button id="btnAide" title="Règles du jeu">❓</button>
+        <button id="btnGraine" title="Choisir une seed pour reproduire la partie">🎲</button>
       </div>
     </header>
 
@@ -89,6 +89,7 @@
         <h2>Fin de partie !</h2>
         <p>Plus aucune paire possible et plus aucun coup spécial restant.</p>
         <p class="score-final">Score final : <span id="scoreFinal">0</span></p>
+        <p class="graine-fin">Seed : <span id="graineFin">—</span></p>
         <div id="classement">
           <h3>🏆 Meilleurs scores</h3>
           <ol id="classementListe"></ol>
@@ -105,6 +106,18 @@
           3 coups spéciaux, chacun une seule fois : <b>⚡ Resonance</b> retourne toutes les cartes de la valeur de la carte piochée ·
           <b>🔄 Echange</b> échange 2 cartes de la grille · <b>👪 Famille</b> retourne 2 cartes non retournées de la même famille.</p>
         <button id="btnFermerAide">OK</button>
+      </div>
+    </div>
+
+    <div id="overlayGraine" class="cache">
+      <div class="boite-graine">
+        <h2>🎲 Seed de la partie</h2>
+        <p>Une seed détermine toute la partie : même seed + mêmes coups = même grille, mêmes tirages. Laissez le champ vide pour une seed aléatoire.</p>
+        <input type="text" id="champGraine" placeholder="ex. 42 ou ma-seed" autocomplete="off" spellcheck="false">
+        <div class="boutons-coup">
+          <button id="btnJouerGraine">Jouer</button>
+          <button id="btnAnnulerGraine" class="bouton-secondaire">Annuler</button>
+        </div>
       </div>
     </div>
   </div>

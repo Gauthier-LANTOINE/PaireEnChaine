@@ -37,7 +37,7 @@ body {
 }
 
 #boutonsEntete { display: flex; gap: 8px; }
-#btnAide { padding: 10px 14px; font-size: 1.05rem; line-height: 1; }
+#btnAide, #btnGraine { padding: 10px 14px; font-size: 1.05rem; line-height: 1; }
 
 /* align-items: stretch (défaut) → toutes les boîtes à la même hauteur */
 #stats { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
@@ -385,6 +385,20 @@ button:active { transform: translateY(0); }
   color: #222;
 }
 
+/* ---------- Graine ---------- */
+#statGraine span {
+  font-family: 'Consolas', 'Menlo', monospace;
+  color: #ffd75e;
+}
+.graine-fin {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.graine-fin span {
+  font-family: 'Consolas', 'Menlo', monospace;
+  color: #ffd75e;
+}
+
 /* ---------- Aide ---------- */
 #aide {
   text-align: center;
@@ -422,6 +436,47 @@ button:active { transform: translateY(0); }
 }
 .boite-aide h2 { margin-bottom: 12px; }
 .boite-aide p { margin-bottom: 12px; font-size: 0.92rem; line-height: 1.5; }
+
+/* ---------- Modale graine ---------- */
+#overlayGraine {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+#overlayGraine.cache { display: none; }
+
+.boite-graine {
+  background: #14432c;
+  border: 2px solid #ffd75e;
+  border-radius: 16px;
+  padding: 24px 28px;
+  text-align: center;
+  animation: apparition 0.4s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  width: min(92vw, 420px);
+}
+.boite-graine h2 { margin-bottom: 12px; }
+.boite-graine p { margin-bottom: 14px; font-size: 0.92rem; line-height: 1.5; }
+#champGraine {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  font-family: 'Consolas', 'Menlo', monospace;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 215, 94, 0.5);
+  border-radius: 8px;
+  outline: none;
+}
+#champGraine:focus {
+  border-color: #ffd75e;
+  box-shadow: 0 0 0 2px rgba(255, 215, 94, 0.25);
+}
 
 /* ---------- Écran de fin ---------- */
 #overlayFin {

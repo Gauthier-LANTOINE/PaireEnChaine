@@ -1,7 +1,7 @@
 /* ===== Paire en Chaîne — service worker (mode hors-ligne) ===== */
 'use strict';
 
-const VERSION = 'paire-en-chaine-v2';
+const VERSION = 'paire-en-chaine-v3';
 const CACHE_APP = VERSION + '.app';         // app shell + paquet complet (préchargés)
 const CACHE_RUNTIME = VERSION + '.runtime'; // autres ressources (mise en cache à la volée)
 

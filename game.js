@@ -31,6 +31,8 @@ let surbrillancePaires = false; // le bouton 💡 Indice est en cours d'affichag
 let cellules = [];
 let idCarte = 0;
 let numeroPartie = 0;
+let seedPartie = 0;    // graine normalisée (entier 32 bits) de la partie en cours
+let aleatoire = null;  // instance PRNG de la partie en cours (une seule pour toute la partie)
 
 /* ---------- Utilitaires ---------- */
 
@@ -81,9 +83,65 @@ function creerPaquet() {
   return paquet;
 }
 
-function melanger(paquet) {
+/* ---------- Graine et pseudo-aléatoire ---------- */
+
+/* PRNG mulberry32 : déterministe à partir d'une graine 32 bits.
+   Une seule instance est créée par partie (voir nouvellePartie) et toutes
+   les sources d'aléatoire du jeu (distribution, mélanges, remélange de la
+   défausse) passent par elle : même graine + mêmes coups = même partie. */
+function creerAleatoire(seed) {
+  let etat = seed >>> 0;
+  return function aleatoire() {
+    etat = (etat + 0x6D2B79F5) | 0;
+    let t = Math.imul(etat ^ (etat >>> 15), 1 | etat);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* cyrb53 : hachage de chaîne (53 bits). Permet d'utiliser n'importe quel
+   texte comme graine ; les 32 bits bas du hachage sont utilisés. */
+function cyrb53(str) {
+  let h1 = 0xdeadbeef ^ str.length;
+  let h2 = 0x41c6ce57 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0) * 4294967296 + (h1 >>> 0);
+}
+
+function graineAleatoire() {
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const tampon = new Uint32Array(1);
+    crypto.getRandomValues(tampon);
+    return tampon[0];
+  }
+  return Math.floor(Math.random() * 4294967296) >>> 0;
+}
+
+/* Normalise une graine (nombre, chaîne ou absente) en un entier 32 bits :
+   - nombre fini → tronqué sur 32 bits
+   - chaîne de chiffres → interprétée comme un nombre
+   - autre chaîne non vide → hachée avec cyrb53
+   - absente / vide → graine aléatoire */
+function normaliserSeed(valeur) {
+  if (typeof valeur === 'number' && isFinite(valeur)) return valeur >>> 0;
+  if (typeof valeur === 'string') {
+    const s = valeur.trim();
+    if (s === '') return graineAleatoire();
+    if (/^\d+$/.test(s)) return parseInt(s, 10) >>> 0;
+    return cyrb53(s) % 4294967296;
+  }
+  return graineAleatoire();
+}
+
+function melanger(paquet, aleatoire) {
   for (let i = paquet.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(aleatoire() * (i + 1));
     [paquet[i], paquet[j]] = [paquet[j], paquet[i]];
   }
   return paquet;
@@ -102,9 +160,11 @@ function apresDelai(gen, delai, fn) {
 
 /* ---------- Démarrage ---------- */
 
-function nouvellePartie() {
+function nouvellePartie(seed) {
   numeroPartie++; // invalide les callbacks en attente de la partie précédente
-  const paquet = melanger(creerPaquet());
+  seedPartie = normaliserSeed(seed);
+  aleatoire = creerAleatoire(seedPartie);
+  const paquet = melanger(creerPaquet(), aleatoire);
   grille = [];
   let idx = 0;
   for (let l = 0; l < NB_LIGNES; l++) {
@@ -125,10 +185,41 @@ function nouvellePartie() {
   document.getElementById('overlayFin').classList.add('cache');
   document.getElementById('overlayCoup').classList.add('cache');
   document.getElementById('overlayAide').classList.add('cache');
+  document.getElementById('overlayGraine').classList.add('cache');
   majHintCoup(null);
   construireGrilleDOM();
   majRecord();
+  majGraine();
+  majUrlSeed();
   afficher(true);
+}
+
+/* Affiche la graine en cours (ligne sous les piles + écran de fin). */
+function majGraine() {
+  document.getElementById('graineAffichee').textContent = seedPartie;
+  document.getElementById('graineFin').textContent = seedPartie;
+}
+
+/* Met à jour l'URL (?seed=…) pour pouvoir partager la partie.
+   Échec silencieux sous file:// (history.replaceState y est interdit). */
+function majUrlSeed() {
+  if (typeof history === 'undefined' || typeof location === 'undefined') return;
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('seed', String(seedPartie));
+    history.replaceState(null, '', url);
+  } catch (e) { /* URL non modifiable : le jeu reste jouable */ }
+}
+
+/* Lit la graine éventuelle dans l'URL (?seed=…) au démarrage.
+   Absente si l'URL n'est pas accessible (sandbox headless des tests). */
+function graineDepuisUrl() {
+  if (typeof location === 'undefined' || typeof URLSearchParams === 'undefined') return undefined;
+  try {
+    return new URLSearchParams(location.search).get('seed');
+  } catch (e) {
+    return undefined;
+  }
 }
 
 function construireGrilleDOM() {
@@ -197,8 +288,6 @@ function afficher(initial = false) {
     }
   }
   document.getElementById('score').textContent = score;
-  document.getElementById('nbTirage').textContent = pileTirage.length;
-  document.getElementById('nbDefausse').textContent = defausse.length;
   afficherPiles();
   majBoutonsCoups();
 }
@@ -470,7 +559,7 @@ function rejouer() {
       if (grille[l][c] === null) {
         if (pileTirage.length === 0) {
           if (defausse.length === 0) return; // défensif : plus aucune carte
-          pileTirage = melanger(defausse);
+          pileTirage = melanger(defausse, aleatoire);
           defausse = [];
         }
         const carte = pileTirage.pop();
@@ -546,7 +635,7 @@ function lancerResonance() {
   if (surbrillancePaires) masquerPaires();
   if (pileTirage.length === 0) {
     if (defausse.length === 0) return;
-    pileTirage = melanger(defausse);
+    pileTirage = melanger(defausse, aleatoire);
     defausse = [];
   }
   const apercu = pileTirage[pileTirage.length - 1];
@@ -798,8 +887,8 @@ function majRecord() {
 
 /* ---------- Initialisation ---------- */
 
-document.getElementById('btnNouvelle').addEventListener('click', nouvellePartie);
-document.getElementById('btnRejouer').addEventListener('click', nouvellePartie);
+document.getElementById('btnNouvelle').addEventListener('click', () => nouvellePartie());
+document.getElementById('btnRejouer').addEventListener('click', () => nouvellePartie()); // « Rejouer » = nouvelle graine aléatoire
 document.getElementById('btnPaires').addEventListener('click', afficherPaires);
 document.getElementById('btnResonance').addEventListener('click', lancerResonance);
 document.getElementById('btnEchange').addEventListener('click', lancerEchange);
@@ -809,7 +898,17 @@ document.getElementById('btnConfirmerCoup').addEventListener('click', confirmerR
 document.getElementById('btnAnnulerCoup').addEventListener('click', annulerResonance);
 document.getElementById('btnAide').addEventListener('click', () => document.getElementById('overlayAide').classList.remove('cache'));
 document.getElementById('btnFermerAide').addEventListener('click', () => document.getElementById('overlayAide').classList.add('cache'));
-nouvellePartie();
+document.getElementById('btnGraine').addEventListener('click', () => {
+  document.getElementById('champGraine').value = seedPartie;
+  document.getElementById('overlayGraine').classList.remove('cache');
+  document.getElementById('champGraine').focus();
+});
+document.getElementById('btnAnnulerGraine').addEventListener('click', () => document.getElementById('overlayGraine').classList.add('cache'));
+document.getElementById('btnJouerGraine').addEventListener('click', () => {
+  document.getElementById('overlayGraine').classList.add('cache');
+  nouvellePartie(document.getElementById('champGraine').value);
+});
+nouvellePartie(graineDepuisUrl());
 
 /* ---------- PWA : inscription du service worker ---------- */
 /* Gardée : le sandbox headless des tests n'a ni navigator ni window. */
